@@ -1,5 +1,8 @@
 import random
 
+from numpy import array
+from scipy.sparse import csr_matrix
+
 
 class HiddenAssociationFinder(object):
     """
@@ -14,20 +17,18 @@ class HiddenAssociationFinder(object):
         """
         self.mapping = mapping
 
-    def _is_sorted(self, array: list) -> bool:
+    @staticmethod
+    def _is_sorted(array: list) -> bool:
         """
         Helper method to sort array
         """
-        prev_item = ""
-        for current_item in array:
-            if current_item >= prev_item:
-                continue
-            else:
-                return False
+        assert len(array) >= 1
+        if len(array) == 1:
+            return True
 
-            prev_item = current_item
-
-        return True
+        current = array[0] <= array[1]
+        previous = HiddenAssociationFinder._is_sorted(array[1:])
+        return current and previous
 
     def validate(self):
         """
@@ -36,7 +37,7 @@ class HiddenAssociationFinder(object):
         for count in range(100):
             node, network = random.choice(list(self.mapping.items()))
 
-            if not self._is_sorted(network):
+            if not HiddenAssociationFinder._is_sorted(network):
                 raise Exception("Some array not sorted")
 
         self.flag = True
@@ -85,19 +86,38 @@ class NetworkModel():
     """
 
     def __init__(self):
-        self.graph = None
-        self.registered_names = {}  # {'Peter': [1,1], 'Sam': [1,2]}
+        self.registered_names = {}
+        self.graph = csr_matrix(array([[]]))
+        # B = S.todense()
+
+    def _register_alias(self, alias: str, location: tuple):
+        # Format: {'Peter': [1,1], 'Sam': [1,2]}
+        self.registered_names.update({alias: location})
+
+    def _remove_alias(self, alias: str):
+        self.registered_names.pop(alias)
+
+    def _retrieve_alias_location(self, alias) -> tuple:
+        return self.registered_names.get(alias)
 
     def add_vertex(self, name, connection_weight):
-        pass
+        # TODO: @bruno implement this
+
+
+        row = 0
+        column = 0
+        self._register_alias(name, (row, column))
 
     def remove_vertex(self, name):
+        # TODO: @bruno implement this
         pass
 
     def add_edge(self, object1, object2):
+        # TODO: @bruno implement this
         pass
 
     def remove_edge(self, object1, object2):
+        # TODO: @bruno implement this
         pass
 
 
@@ -109,6 +129,7 @@ class FacebookApplication():
     def __init__(self):
         self.network = NetworkModel()
         self.NEW_FRIEND_WEIGHT = 1
+        # self.NEW_GROUP_WEIGHT = 1
         # self.CLOSE_FRIEND_WEIGHT = 1
 
     def create_account(self, user_name):
@@ -127,9 +148,12 @@ class FacebookApplication():
     def remove_account(self, user_name):
         self.network.remove_vertex(user_name)
 
+    def export_network_model(self):
+        return self.network
+
 
 def demo():
-    # Case 1
+    # Facebook Interface
     facebook = FacebookApplication()
     facebook.create_account('Peter')
     facebook.create_account('John')
@@ -138,12 +162,14 @@ def demo():
     facebook.add_friend('Peter', 'John')
     facebook.add_friend('John', 'Sam')
 
-    finder = HiddenAssociationFinder(facebook)
+    network_model = facebook.export_network_model()
+
+    # Analysis
+    finder = HiddenAssociationFinder(network_model)
     finder.validate()
     print(finder.getAssociationsAll(focusedObject='Peter'))
     print(finder.getAssociationsAll(focusedObject='Sam'))
     print(finder.getAssociationsAll(focusedObject='John'))
-
 
     # demo_netword = {"a": ['c', 'e', 'GA', 'GB'],
     #                 "b": ['d', 'e', 'GB'],
@@ -156,4 +182,5 @@ def demo():
     #                 "GB": ['a', 'b']}
 
 
-demo()
+if __name__ == "__main__":
+    print('working')
